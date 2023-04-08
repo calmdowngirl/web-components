@@ -239,70 +239,69 @@ input[type='range']::-webkit-slider-thumb {
 `
 
 class ThreeHeadSlider extends HTMLElement {
-  static #hostWidth
-  static #hostMin
-  static #hostMax
-  static #hostUom
+  #width
+  #uom
+  static #min
+  static #max
   static #mid
 
   constructor() {
     super()
     const shadow = this.attachShadow({ mode: 'open' })
     shadow.append(template.content.cloneNode(true))
+    const slider = shadow.host
 
-    ThreeHeadSlider.#hostWidth = (() => {
-      if (shadow.host.hasAttribute('width'))
-        return shadow.host.getAttribute('width')
+    this.#width = (() => {
+      if (slider.hasAttribute('width'))
+        return slider.getAttribute('width')
       else return '100vw'
     })()
-    ThreeHeadSlider.#hostMin = (() => {
-      if (shadow.host.hasAttribute('min'))
-        return shadow.host.getAttribute('min')
+    ThreeHeadSlider.#min = (() => {
+      if (slider.hasAttribute('min'))
+        return slider.getAttribute('min')
       else return '0'
     })()
-    ThreeHeadSlider.#hostMax = (() => {
-      if (shadow.host.hasAttribute('max'))
-        return shadow.host.getAttribute('max')
+    ThreeHeadSlider.#max = (() => {
+      if (slider.hasAttribute('max'))
+        return slider.getAttribute('max')
       else return '100'
     })()
     ThreeHeadSlider.#mid = (() => {
-      return Math.round((ThreeHeadSlider.#hostMax - ThreeHeadSlider.#hostMin) / 2)
+      return Math.floor((ThreeHeadSlider.#max - ThreeHeadSlider.#min) / 2)
     })()
-    ThreeHeadSlider.#hostUom = (() => {
-      if (shadow.host.hasAttribute('uom'))
-        return shadow.host.getAttribute('uom')
+    this.#uom = (() => {
+      if (slider.hasAttribute('uom'))
+        return slider.getAttribute('uom')
       else return '%'
     })()
 
-    shadow.querySelector('.wrapper').style.width = ThreeHeadSlider.#hostWidth
+    shadow.querySelector('.wrapper').style.width = this.#width
     shadow.querySelector('#text-label-max').innerHTML = `
-        ${ThreeHeadSlider.#hostMax}${ThreeHeadSlider.#hostUom}
+        ${ThreeHeadSlider.#max}${this.#uom}
       `
 
     shadow.querySelectorAll('input[type="range"]')
-      .forEach(elem => elem.setAttribute('min', ThreeHeadSlider.#hostMin))
-    shadow.querySelector('#text-label-min').innerHTML = ThreeHeadSlider.#hostMin
+      .forEach(elem => elem.setAttribute('min', ThreeHeadSlider.#min))
+    shadow.querySelector('#text-label-min').innerHTML = ThreeHeadSlider.#min
     shadow.querySelector('#thumbLeft>.thumb-label').innerHTML =
-      ThreeHeadSlider.#hostMin
+      ThreeHeadSlider.#min
     shadow.querySelectorAll('input[type="range"]')
-      .forEach(elem => elem.setAttribute('max', ThreeHeadSlider.#hostMax))
+      .forEach(elem => elem.setAttribute('max', ThreeHeadSlider.#max))
     shadow.querySelector('#thumbRight>.thumb-label').innerHTML =
-      ThreeHeadSlider.#hostMax
+      ThreeHeadSlider.#max
     shadow.querySelector('#thumbCentre>.thumb-label-mid').innerHTML =
       ThreeHeadSlider.#mid
 
-    shadow.querySelector('#inputLeft').value = ThreeHeadSlider.#hostMin
+    shadow.querySelector('#inputLeft').value = ThreeHeadSlider.#min
     shadow.querySelector('#inputCentre').value = ThreeHeadSlider.#mid
-    shadow.querySelector('#inputRight').value = ThreeHeadSlider.#hostMax
+    shadow.querySelector('#inputRight').value = ThreeHeadSlider.#max
   }
 
-  static get hostWidth() { return ThreeHeadSlider.#hostWidth }
-  static get hostUom() { return ThreeHeadSlider.#hostUom }
   static get range() {
     return {
-      min: ThreeHeadSlider.#hostMin,
+      min: ThreeHeadSlider.#min,
       mid: ThreeHeadSlider.#mid,
-      max: ThreeHeadSlider.#hostMax
+      max: ThreeHeadSlider.#max
     }
   }
 }
@@ -352,7 +351,7 @@ function setLeftValue() {
 
     inputMid = fencing(
       'mid',
-      Math.round(inputMin + (inputMax - inputMin) / 2)
+      Math.floor(inputMin + (inputMax - inputMin) / 2)
     )
     thumbCentreLabel.innerHTML = inputMid
     percent = computePercent(inputMid)
@@ -382,7 +381,7 @@ function setRightValue() {
 
     inputMid = fencing(
       'mid',
-      Math.round(inputMin + (inputMax - inputMin) / 2)
+      Math.floor(inputMin + (inputMax - inputMin) / 2)
     )
     thumbCentreLabel.innerHTML = inputMid
     percent = computePercent(inputMid)
@@ -403,14 +402,14 @@ function setCentreValue() {
   if (isLocked()) {
     inputMax = fencing(
       'max',
-      Math.min(max, Math.round(inputMid + diff / 2))
+      Math.min(max, Math.floor(inputMid + diff / 2))
     )
     thumbRightLabel.innerHTML = inputMax
 
     percent = computePercent(inputMax)
     renderRight(percent)
 
-    inputMin = fencing('min', Math.round(inputMid - diff / 2))
+    inputMin = fencing('min', Math.floor(inputMid - diff / 2))
     thumbLeftLabel.innerHTML = inputMin
 
     percent = computePercent(inputMin)
