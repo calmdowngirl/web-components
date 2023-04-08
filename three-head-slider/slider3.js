@@ -30,7 +30,6 @@ template.innerHTML = `
   position: relative;
   z-index: 1;
   height: 10px;
-  // margin: 0 15px;
   margin: 0 0.5rem 0 0.75rem;
 }
 .slider > .track {
@@ -158,7 +157,7 @@ input[type='range']::-webkit-slider-thumb {
     <label for="lock">lock</label>
   </div>
 
-  <div class="text-label">0</div>
+  <div class="text-label" id="text-label-min">0</div>
   <div class="middle">
     <div class="multi-range-slider">
       <input
@@ -234,15 +233,77 @@ input[type='range']::-webkit-slider-thumb {
       </div>
     </div>
   </div>
-  <div class="text-label">100 %</div>
+  <div class="text-label" id="text-label-max">
+  </div>
 </div>
 `
 
 class ThreeHeadSlider extends HTMLElement {
+  static #hostWidth
+  static #hostMin
+  static #hostMax
+  static #hostUom
+  static #mid
+
   constructor() {
     super()
     const shadow = this.attachShadow({ mode: 'open' })
     shadow.append(template.content.cloneNode(true))
+
+    ThreeHeadSlider.#hostWidth = (() => {
+      if (shadow.host.hasAttribute('width'))
+        return shadow.host.getAttribute('width')
+      else return '100vw'
+    })()
+    ThreeHeadSlider.#hostMin = (() => {
+      if (shadow.host.hasAttribute('min'))
+        return shadow.host.getAttribute('min')
+      else return '0'
+    })()
+    ThreeHeadSlider.#hostMax = (() => {
+      if (shadow.host.hasAttribute('max'))
+        return shadow.host.getAttribute('max')
+      else return '100'
+    })()
+    ThreeHeadSlider.#mid = (() => {
+      return Math.round((ThreeHeadSlider.#hostMax - ThreeHeadSlider.#hostMin) / 2)
+    })()
+    ThreeHeadSlider.#hostUom = (() => {
+      if (shadow.host.hasAttribute('uom'))
+        return shadow.host.getAttribute('uom')
+      else return '%'
+    })()
+
+    shadow.querySelector('.wrapper').style.width = ThreeHeadSlider.#hostWidth
+    shadow.querySelector('#text-label-max').innerHTML = `
+        ${ThreeHeadSlider.#hostMax}${ThreeHeadSlider.#hostUom}
+      `
+
+    shadow.querySelectorAll('input[type="range"]')
+      .forEach(elem => elem.setAttribute('min', ThreeHeadSlider.#hostMin))
+    shadow.querySelector('#text-label-min').innerHTML = ThreeHeadSlider.#hostMin
+    shadow.querySelector('#thumbLeft>.thumb-label').innerHTML =
+      ThreeHeadSlider.#hostMin
+    shadow.querySelectorAll('input[type="range"]')
+      .forEach(elem => elem.setAttribute('max', ThreeHeadSlider.#hostMax))
+    shadow.querySelector('#thumbRight>.thumb-label').innerHTML =
+      ThreeHeadSlider.#hostMax
+    shadow.querySelector('#thumbCentre>.thumb-label-mid').innerHTML =
+      ThreeHeadSlider.#mid
+
+    shadow.querySelector('#inputLeft').value = ThreeHeadSlider.#hostMin
+    shadow.querySelector('#inputCentre').value = ThreeHeadSlider.#mid
+    shadow.querySelector('#inputRight').value = ThreeHeadSlider.#hostMax
+  }
+
+  static get hostWidth() { return ThreeHeadSlider.#hostWidth }
+  static get hostUom() { return ThreeHeadSlider.#hostUom }
+  static get range() {
+    return {
+      min: ThreeHeadSlider.#hostMin,
+      mid: ThreeHeadSlider.#mid,
+      max: ThreeHeadSlider.#hostMax
+    }
   }
 }
 
@@ -261,14 +322,14 @@ const lock = slider.querySelector('#lock')
 const thumbLeftLabel = slider.querySelector('#thumbLeft .thumb-label')
 const thumbCentreLabel = slider.querySelector('#thumbCentre .thumb-label-mid')
 const thumbRightLabel = slider.querySelector('#thumbRight .thumb-label')
-const min = 0
-const max = 100
+const min = ThreeHeadSlider.range.min
+const max = ThreeHeadSlider.range.max
 let range = max - min
-let inputMin = 0
-let inputMax = 100
-let inputMid = 50
+let inputMin = ThreeHeadSlider.range.min
+let inputMax = ThreeHeadSlider.range.max
+let inputMid = ThreeHeadSlider.range.mid
 
-isLocked = () => lock.checked === true
+const isLocked = () => lock.checked === true
 
 function setLeftValue() {
   let percent
@@ -377,7 +438,7 @@ function computePercent(value) {
   return ((value - min) / range) * 100
 }
 
-const bringForward = (leftMidOrRight, trueOrFalse = true) => {
+const bringForward = (leftMidOrRight) => {
   thumbLeft.style.backgroundColor = ""
   thumbCentre.style.backgroundColor = ""
   thumbRight.style.backgroundColor = ""
@@ -386,28 +447,27 @@ const bringForward = (leftMidOrRight, trueOrFalse = true) => {
   inputCentre.style.zIndex = '200'
   inputRight.style.zIndex = '200'
 
-  if (true) {
-    switch (leftMidOrRight) {
-      case 'left':
-        thumbLeft.style.backgroundColor = '#000'
-        inputLeft.style.zIndex = '500'
-        inputLeft.focus()
-        break
-      case 'mid':
-        thumbCentre.style.backgroundColor = '#000'
-        inputCentre.style.zIndex = '500'
-        inputCentre.focus()
-        break
-      case 'right':
-        thumbRight.style.backgroundColor = '#000'
-        inputRight.style.zIndex = '500'
-        inputRight.focus()
-        break
-      default:
-        break
-    }
+  switch (leftMidOrRight) {
+    case 'left':
+      thumbLeft.style.backgroundColor = '#000'
+      inputLeft.style.zIndex = '500'
+      inputLeft.focus()
+      break
+    case 'mid':
+      thumbCentre.style.backgroundColor = '#000'
+      inputCentre.style.zIndex = '500'
+      inputCentre.focus()
+      break
+    case 'right':
+      thumbRight.style.backgroundColor = '#000'
+      inputRight.style.zIndex = '500'
+      inputRight.focus()
+      break
+    default:
+      break
   }
 }
+
 
 function fencing(minMidOrMax, value) {
   switch (minMidOrMax) {
