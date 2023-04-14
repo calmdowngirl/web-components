@@ -207,8 +207,8 @@ input[type='range']::-webkit-slider-thumb {
           id="thumbLeft"
           class="thumb left"
           style="left: 0%;"
-          onmousedown="bringForward('left', true)"
-          onmouseout="bringForward('left', false)"
+          onmousedown="bringForward('left')"
+          onmouseout="bringForward('left')"
         >
           <span class="thumb-label">0</span>
         </div>
@@ -216,8 +216,8 @@ input[type='range']::-webkit-slider-thumb {
           id="thumbRight"
           class="thumb right"
           style="right: 0%;"
-          onmousedown="bringForward('right', true)"
-          onmouseout="bringForward('right', false)"
+          onmousedown="bringForward('right')"
+          onmouseout="bringForward('right')"
         >
           <span class="thumb-label">100</span>
         </div>
@@ -225,8 +225,8 @@ input[type='range']::-webkit-slider-thumb {
           id="thumbCentre"
           class="thumb centre"
           style="right: 50%;"
-          onmousedown="bringForward('mid', true)"
-          onmouseout="bringForward('mid', false)"
+          onmousedown="bringForward('mid')"
+          onmouseout="bringForward('mid')"
         >
           <span class="thumb-label-mid">50</span>
         </div>
@@ -239,17 +239,26 @@ input[type='range']::-webkit-slider-thumb {
 `
 
 class ThreeHeadSlider extends HTMLElement {
+  static get observedAttributes() { return ['upper', 'mid', 'lower']; }
+  attributeChangedCallback(name, oldValue, newValue) {
+    console.log(`value changed: \n[${name}] was ${oldValue}, new value is ${newValue}`);
+  }
+
   #width
   #uom
   static #min
   static #max
   static #mid
+  static #slider
 
   constructor() {
     super()
+
     const shadow = this.attachShadow({ mode: 'open' })
     shadow.append(template.content.cloneNode(true))
     const slider = shadow.host
+
+    ThreeHeadSlider.#slider = slider
 
     this.#width = (() => {
       if (slider.hasAttribute('width'))
@@ -304,6 +313,21 @@ class ThreeHeadSlider extends HTMLElement {
       max: ThreeHeadSlider.#max
     }
   }
+
+  static setSliderUpperRange() {
+    ThreeHeadSlider.#slider.setAttribute('upper',
+      ThreeHeadSlider.#slider.shadowRoot.querySelector('#inputRight').value)
+  }
+
+  static setSliderMiddleRange() {
+    ThreeHeadSlider.#slider.setAttribute('mid',
+      ThreeHeadSlider.#slider.shadowRoot.querySelector('#inputCentre').value)
+  }
+
+  static setSliderLowerRange() {
+    ThreeHeadSlider.#slider.setAttribute('lower',
+      ThreeHeadSlider.#slider.shadowRoot.querySelector('#inputLeft').value)
+  }
 }
 
 customElements.define("three-head-slider", ThreeHeadSlider)
@@ -338,6 +362,7 @@ function setLeftValue() {
 
   percent = computePercent(inputMin)
   renderLeft(percent)
+  ThreeHeadSlider.setSliderLowerRange(percent)
 
   if (isLocked()) {
     inputMax = fencing(
@@ -348,6 +373,7 @@ function setLeftValue() {
 
     percent = computePercent(inputMax)
     renderRight(percent)
+    ThreeHeadSlider.setSliderUpperRange(percent)
 
     inputMid = fencing(
       'mid',
@@ -357,6 +383,7 @@ function setLeftValue() {
     percent = computePercent(inputMid)
 
     renderCentre(percent)
+    ThreeHeadSlider.setSliderMiddleRange(percent)
   }
 }
 
@@ -368,6 +395,7 @@ function setRightValue() {
 
   percent = computePercent(inputMax)
   renderRight(percent)
+  ThreeHeadSlider.setSliderUpperRange(percent)
 
   if (isLocked()) {
     inputMin = fencing(
@@ -378,6 +406,7 @@ function setRightValue() {
 
     percent = computePercent(inputMin)
     renderLeft(percent)
+    ThreeHeadSlider.setSliderLowerRange(percent)
 
     inputMid = fencing(
       'mid',
@@ -386,6 +415,7 @@ function setRightValue() {
     thumbCentreLabel.innerHTML = inputMid
     percent = computePercent(inputMid)
     renderCentre(percent)
+    ThreeHeadSlider.setSliderMiddleRange(percent)
   }
 }
 
@@ -398,6 +428,7 @@ function setCentreValue() {
 
   percent = computePercent(inputMid)
   renderCentre(percent)
+  ThreeHeadSlider.setSliderMiddleRange(percent)
 
   if (isLocked()) {
     inputMax = fencing(
@@ -408,12 +439,14 @@ function setCentreValue() {
 
     percent = computePercent(inputMax)
     renderRight(percent)
+    ThreeHeadSlider.setSliderUpperRange(percent)
 
     inputMin = fencing('min', Math.floor(inputMid - diff / 2))
     thumbLeftLabel.innerHTML = inputMin
 
     percent = computePercent(inputMin)
     renderLeft(percent)
+    ThreeHeadSlider.setSliderLowerRange(percent)
   }
 }
 
